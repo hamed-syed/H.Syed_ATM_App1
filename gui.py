@@ -1,43 +1,23 @@
-
-from PyQt6.QtWidgets import QWidget, QPushButton, QLabel, QLineEdit, QVBoxLayout, QMessageBox
+from PyQt6 import uic
+from PyQt6.QtWidgets import QWidget, QMessageBox
 from logic import ATMLogic
 
 class ATMApp(QWidget):
     def __init__(self):
         super().__init__()
+        uic.loadUi("atm.ui", self)
         self.logic = ATMLogic()
-        self.init_ui()
-
-    def init_ui(self):
-        self.setWindowTitle("ATM App")
-        self.login_label = QLabel("Enter Username:")
-        self.login_input = QLineEdit()
-        self.login_button = QPushButton("Login")
         self.login_button.clicked.connect(self.login)
-        self.balance_label = QLabel("Balance: Hidden")
-        self.amount_input = QLineEdit()
-        self.amount_input.setPlaceholderText("Enter amount")
-        self.deposit_button = QPushButton("Deposit")
-        self.withdraw_button = QPushButton("Withdraw")
         self.deposit_button.clicked.connect(self.deposit)
         self.withdraw_button.clicked.connect(self.withdraw)
-        layout = QVBoxLayout()
-        layout.addWidget(self.login_label)
-        layout.addWidget(self.login_input)
-        layout.addWidget(self.login_button)
-        layout.addWidget(self.balance_label)
-        layout.addWidget(self.amount_input)
-        layout.addWidget(self.deposit_button)
-        layout.addWidget(self.withdraw_button)
-        self.setLayout(layout)
 
     def login(self):
         username = self.login_input.text().strip()
         if self.logic.login(username):
             self.update_balance()
-            QMessageBox.information(self, "Login", f"Welcome {username}!")
+            self.show_message("Login successful", "info")
         else:
-            QMessageBox.warning(self, "Login Failed", "User not found.")
+            self.show_message("User not found", "error")
 
     def update_balance(self):
         self.balance_label.setText(f"Balance: ${self.logic.get_balance():.2f}")
@@ -47,14 +27,24 @@ class ATMApp(QWidget):
             amount = float(self.amount_input.text())
             self.logic.deposit(amount)
             self.update_balance()
+            self.show_message("Deposit successful", "success")
         except ValueError:
-            QMessageBox.warning(self, "Error", "Invalid amount")
+            self.show_message("Invalid amount", "error")
 
     def withdraw(self):
         try:
             amount = float(self.amount_input.text())
             if not self.logic.withdraw(amount):
-                QMessageBox.warning(self, "Error", "Insufficient funds or invalid input")
+                self.show_message("Insufficient funds or invalid input", "error")
             self.update_balance()
         except ValueError:
-            QMessageBox.warning(self, "Error", "Invalid amount")
+            self.show_message("Invalid amount", "error")
+
+    def show_message(self, message: str, level: str):
+        colors = {
+            "info": "#2196F3",
+            "success": "#4CAF50",
+            "error": "#F44336"
+        }
+        QMessageBox.information(self, "Message", message)
+        self.balance_label.setStyleSheet(f"color: {colors.get(level, 'black')}")
